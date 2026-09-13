@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  # 데이터베이스 서비스 (Oracle Database 21c XE)
+  db:
+    image: gvenzl/oracle-xe:18-slim
+    container_name: trip-oracle
+    privileged: true
+    restart: always
+    shm_size: 2g
+    environment:
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:-oracle123!}
+      APP_USER: ${APP_USER:-TRIP_USER}
+      APP_USER_PASSWORD: ${APP_USER_PASSWORD:-trippassword123!}
+    ports:
+      - "1521:1521"
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+      - ./oracle-init:/container-entrypoint-initdb.d
+
+  # API 백엔드 서버 (Express + Oracle DB Node Driver)
+  api:
+    image: node:20-alpine
+    container_name: trip-api
+    restart: always
+    working_dir: /app
+    environment:
+      DB_USER: ${DB_USER:-TRIP_USER}
+      DB_PASSWORD: ${DB_PASSWORD:-trippassword123!}
+      DB_CONNECT_STRING: ${DB_CONNECT_STRING:-db:1521/XEPDB1}
+      PORT: ${PORT:-3000}
+    ports:
+      - "80:3000"
+    command: sh -c "npm install && node server.js"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - db
+
+volumes:
+  oracle_data:

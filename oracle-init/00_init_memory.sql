@@ -1,0 +1,4 @@
+ALTER SYSTEM SET sga_target=350M SCOPE=BOTH;
+ALTER SYSTEM SET pga_aggregate_target=100M SCOPE=BOTH;
+ALTER SYSTEM SET memory_target=0 SCOPE=BOTH;
+ALTER SYSTEM SET "_use_adaptive_log_file_sync"=FALSE SCOPE=BOTH;
