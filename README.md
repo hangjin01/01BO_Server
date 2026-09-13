@@ -238,7 +238,148 @@ erDiagram
 
 ---
 
-## 🔒 4. 보안 및 비밀정보 관리 (Security & Secrets)
+## 🔌 4. API 연동 및 호출 가이드 (API Request & Integration Guide)
+
+### 🌐 4.1. 공통 요청 및 응답 규격 (Common Specification)
+
+- **Base URL**: `http://localhost:3000/api` (Docker 외부 연결: `http://<SERVER_IP>:80/api`)
+- **Headers**:
+  - `Content-Type: application/json`
+  - `Accept: application/json`
+- **Multi-Tenancy 테넌트 데이터 조회**:
+  - 데이터 요청 시 Query Parameter에 `companyCode` (예: `?companyCode=COMP01`)를 함께 전송하여 해당 테넌트 데이터만 안전하게 필터링하여 조회합니다.
+
+#### ✅ 성공 응답 포맷 (HTTP 200 / 201)
+```json
+{
+  "success": true,
+  "message": "성공 안내 메시지 (선택)",
+  "data": { ... } // 단일 객체 또는 배열
+}
+```
+
+#### ❌ 에러 응답 포맷 (HTTP 400 / 404 / 409 / 500)
+```json
+{
+  "success": false,
+  "message": "에러 메시지 요약",
+  "error": "상세 오라클 DB 에러 또는 시스템 메시지"
+}
+```
+
+---
+
+### 💻 4.2. 클라이언트 코드 예시 (Client Usage Examples)
+
+#### 1) Modern JavaScript (`fetch` API / Async-Await)
+```javascript
+const BASE_URL = 'http://localhost:3000/api';
+
+// 1. 특정 테넌트의 출장 목록 조회 (GET)
+async function fetchTrips(companyCode = 'COMP01') {
+  try {
+    const response = await fetch(`${BASE_URL}/trips?companyCode=${companyCode}`);
+    const result = await response.json();
+    if (result.success) {
+      console.log('출장 목록:', result.data);
+    }
+  } catch (error) {
+    console.error('API 호출 에러:', error);
+  }
+}
+
+// 2. 신규 GPS/NFC 체크인 등록 (POST)
+async function createCheckIn(checkInData) {
+  try {
+    const response = await fetch(`${BASE_URL}/check-ins`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(checkInData)
+    });
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('체크인 등록 실패:', error);
+  }
+}
+```
+
+#### 2) Axios / Node.js
+```javascript
+const axios = require('axios');
+const api = axios.create({ baseURL: 'http://localhost:3000/api' });
+
+// 경비 내역 등록 API 호출
+async function addExpense(expensePayload) {
+  try {
+    const res = await api.post('/expenses', {
+      tripId: 'trip_101',
+      userId: 'user_01',
+      companyCode: 'COMP01',
+      expenseDate: '2026-10-02',
+      merchant: '이치란 라멘 도쿄점',
+      amount: 1200,
+      category: '식비'
+    });
+    console.log('경비 등록 완료:', res.data);
+  } catch (err) {
+    console.error('경비 등록 오류:', err.response?.data || err.message);
+  }
+}
+```
+
+#### 3) cURL (터미널 커맨드 테스트)
+```bash
+# 1. 헬스 체크 확인
+curl -X GET http://localhost:3000/api/health
+
+# 2. 특정 테넌트 회사 상세 및 통계 조회
+curl -X GET http://localhost:3000/api/companies/COMP01
+
+# 3. 신규 출장 등록
+curl -X POST http://localhost:3000/api/trips \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "도쿄 IT 서밋 참석 출장",
+    "startDate": "2026-11-01",
+    "endDate": "2026-11-05",
+    "destination": "Tokyo, Japan",
+    "companyCode": "COMP01",
+    "userId": "user_01",
+    "purpose": "글로벌 파트너십 구축"
+  }'
+
+# 4. 엔화(JPY) 환율 변환 계산 (15,000 JPY -> KRW)
+curl -X GET "http://localhost:3000/api/exchange-rate?jpy=15000"
+```
+
+---
+
+### 📑 4.3. 도메인별 API 엔드포인트 요약
+
+| 도메인 | HTTP Method | Endpoint | 필수 / 주요 파라미터 | 설명 |
+| :--- | :--- | :--- | :--- | :--- |
+| **시스템** | `GET` | `/api/health` | - | 백엔드 서버 작동 상태 확인 |
+| **환율** | `GET` | `/api/exchange-rate` | Query: `jpy` (number) | JPY ➔ KRW 원화 환율 환산 |
+| **테넌트/회사** | `GET` | `/api/companies` | - | 전체 회사/테넌트 목록 조회 |
+| **테넌트/회사** | `GET` | `/api/companies/:code` | Path: `:code` | 특정 회사 상세 정보 및 소속 집계 통계 조회 |
+| **테넌트/회사** | `POST` | `/api/companies` | Body: `companyCode`, `companyName`, `plan` | 신규 테넌트/회사 등록 |
+| **사용자** | `GET` | `/api/users` | Query: `companyCode`, `role` | 테넌트별 사용자 목록 조회 |
+| **사용자** | `GET` | `/api/users/:uid` | Path: `:uid` | 특정 사용자 프로필 상세 조회 |
+| **사용자** | `POST` | `/api/users` | Body: `uid`, `email`, `name`, `companyCode` | 사용자 등록 및 정보 수정 (Upsert) |
+| **출장 관리** | `GET` | `/api/trips` | Query: `companyCode`, `userId`, `status` | 테넌트별/사용자별 출장 목록 조회 |
+| **출장 관리** | `GET` | `/api/trips/:id` | Path: `:id` | 출장 상세 정보 조회 |
+| **출장 관리** | `POST` | `/api/trips` | Body: `title`, `startDate`, `endDate`, `companyCode` | 신규 출장 등록 |
+| **출장 리포트** | `GET` | `/api/trips/:id/summary` | Path: `:id` | 해당 출장의 경비+체크인 종합 리포트 조회 |
+| **체크인** | `GET` | `/api/check-ins` | Query: `companyCode`, `tripId`, `userId` | GPS/NFC 체크인 기록 조회 |
+| **체크인** | `POST` | `/api/check-ins` | Body: `tripId`, `userId`, `locationName`, `type` | 위치(GPS) 및 NFC 체크인 기록 생성 |
+| **경비 정산** | `GET` | `/api/expenses` | Query: `companyCode`, `tripId` | 출장 경비 영수증 내역 목록 조회 |
+| **경비 정산** | `POST` | `/api/expenses` | Body: `tripId`, `expenseDate`, `merchant`, `amount` | 경비 지출 내역 등록 |
+| **경비 정산** | `DELETE`| `/api/expenses/:id` | Path: `:id` | 특정 경비 내역 삭제 |
+
+---
+
+## 🔒 5. 보안 및 비밀정보 관리 (Security & Secrets)
 
 - 본 저장소에는 DB 접속 비밀번호, JWT Secret, API Key 등 보안 민감 정보가 직접 포함되어 있지 않습니다.
 - 모든 운영 설정은 **`.env`** 파일을 통해 주입됩니다.
@@ -250,7 +391,7 @@ cp .env.example .env
 
 ---
 
-## 🚀 5. 실행 및 서비스 운영 (Operations Guide)
+## 🚀 6. 실행 및 서비스 운영 (Operations Guide)
 
 ### Docker Compose를 통한 서버 실행
 
@@ -278,6 +419,6 @@ node backend/seed_data.js
 
 ---
 
-## 📄 6. 라이선스 (License)
+## 📄 7. 라이선스 (License)
 
 This project is licensed under the MIT License.
