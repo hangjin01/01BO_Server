@@ -1,5 +1,7 @@
 # 01BO_Server 🚀
 
+> **2026-11-01 운영 소스 반영:** 현재 실행 중인 AWS `trip-api`의 `/home/ubuntu/japan-trip-app/backend` 소스를 가져왔습니다. 최신 구성·검증 결과·미해결 사항은 [운영 소스 반영 기록](docs/SERVER_SYNC_20261101.md)을 먼저 확인하세요. 아래의 초기 API 예시와 별도 `API_SPECIFICATION.md`는 과거 설계 자료이며, 현재 인증·권한·응답 형식과 다를 수 있습니다. 회사 코드를 요청에 넣는 것만으로 접근 권한이 부여되지 않습니다. 현재 동작은 `server.js`, `routes/application.js`, `lib/auth.js` 등 실행 소스를 기준으로 확인하세요.
+
 **01BO_Server**는 멀티테넌시(Multi-Tenancy) 아키텍처 기반의 출장 관리, GPS/NFC 기반 체크인 검증, 경비 정산 및 인보이스 자동화를 제공하는 백엔드 REST API 운영 서버입니다.
 
 ---

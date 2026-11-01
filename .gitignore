@@ -8,6 +8,17 @@ yarn-error.log*
 .env
 .env.local
 .env.production
+.env.*
+!.env.example
+.private/
+.backups/
+.releases/
+*.before-*
+client_secret*.json
+*.jks
+*.keystore
+__pycache__/
+*.pyc
 *.pem
 *.key
 
