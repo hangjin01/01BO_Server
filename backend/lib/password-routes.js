@@ -2,13 +2,13 @@ const crypto=require('node:crypto');
 const {executeQuery:q,transaction}=require('../db');
 const v=require('./validation'),pw=require('./password');
 module.exports=function passwordRoutes(router,{issueSession,respondSession}){
- const limits=new Map();
+ // Separate bounded windows prevent login/registration identity floods consuming memory.
+ const {createLimiter}=require('./request-security');
+ const admitLogin=createLimiter({max:40,windowMs:900000});
+ const admitRegister=createLimiter({max:10,windowMs:900000});
  function guard(req,kind){
   if(!req.secure&&!['localhost','127.0.0.1','[::1]'].includes(req.hostname))v.fail(403,'HTTPS 연결에서 로그인해 주세요.');
-  const now=Date.now(),key=kind+':'+req.ip;
-  for(const [k,x]of limits)if(x.until<=now)limits.delete(k);
-  let entry=limits.get(key);if(!entry){entry={count:0,until:now+900000};limits.set(key,entry);}
-  if(++entry.count>(kind==='register'?10:40))v.fail(429,'시도 횟수가 많습니다. 15분 후 다시 시도해 주세요.');
+  if(!(kind==='register'?admitRegister:admitLogin)(req.ip))v.fail(429,'시도 횟수가 많습니다. 15분 후 다시 시도해 주세요.');
   if(![undefined,'web','native'].includes(req.body?.sessionMode))v.fail(400,'Invalid session mode');
  }
  router.post('/register',async(req,res)=>{

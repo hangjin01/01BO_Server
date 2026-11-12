@@ -1,3 +1,4 @@
+// 저장된 일보의 사용자/회사 소유권을 확인한 뒤 파일 생성·미리보기·명시적 발송을 분리한다.
 const express=require('express'),crypto=require('node:crypto');
 const db=require('../db'),v=require('../lib/validation'),mail=require('../lib/mail');
 const {saveReport}=require('../lib/agent/reports'),{createReportDocx}=require('../lib/report-docx');

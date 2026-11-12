@@ -1,5 +1,6 @@
 const crypto = require('node:crypto');
-function fail(status, message) { throw Object.assign(new Error(message), { status }); }
+// Only deliberate application errors expose their human-readable message.
+function fail(status, message) { throw Object.assign(new Error(message), { status, expose: true }); }
 function text(value, max, name, required = true) {
   if (value === null || value === undefined || value === '') { if (required) fail(400, `${name} is required`); return null; }
   if (typeof value !== 'string' || !value.trim() || Buffer.byteLength(value) > max) fail(400, `${name} is invalid or too long`);

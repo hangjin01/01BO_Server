@@ -1,3 +1,4 @@
+// AI 출력은 실행 권한이 아니다. 허용 작업·소속·소유권을 검증하고 요청 중복 처리를 트랜잭션에 묶는다.
 const express=require('express'),crypto=require('node:crypto');
 const db=require('../../db'),v=require('../validation'),providers=require('./providers'),managed=require('./managed'),mail=require('../mail');
 const today=()=>new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo'}).format(new Date());
@@ -6,7 +7,8 @@ function publicResult(r){const {pending,accessRole,...visible}=r;return visible;
 function validTime(t){if(typeof t!=='string'||!/^([01]\d|2[0-3]):[0-5]\d$/.test(t))v.fail(400,'일정 시간을 HH:MM으로 알려주세요.');return t;}
 function createAgentRouter(deps={}){
  const router=express.Router(),plan=deps.plan||providers.plan,search=deps.search||providers.search;
- const busy=new Set(),limits=new Map();
+ const busy=new Set();
+ const admit=require('../request-security').createLimiter({max:deps.maxRequests||10});
  router.get('/agent/history',async(req,res)=>{
   const cid=req.query.conversationId?v.text(req.query.conversationId,64,'conversationId'):null;
   if(cid&&!/^[a-zA-Z0-9-]{8,64}$/.test(cid))v.fail(400,'Invalid conversation ID');
@@ -32,9 +34,7 @@ function createAgentRouter(deps={}){
   const message=v.text(b.message,4000,'message'),language=b.language==='ja'?'ja':'ko';
   const digest=v.hash(JSON.stringify({conversationId,message,choice:b.choice||null,activeTripId:b.activeTripId||null,language}));
   if(busy.has(user.UID_VAL))v.fail(409,'이전 제로보 요청을 처리 중입니다. 잠시 후 같은 요청을 다시 시도해 주세요.');
-  const now=Date.now(),limit=limits.get(user.UID_VAL)||{count:0,until:now+60000};
-  if(limit.until<now){limit.count=0;limit.until=now+60000;}if(++limit.count>(deps.maxRequests||10))v.fail(429,'제로보 요청은 분당 10회까지 가능합니다.');limits.set(user.UID_VAL,limit);
-  if(limits.size>10000)for(const [key,val]of limits)if(val.until<now)limits.delete(key);
+  if(!admit(user.UID_VAL))v.fail(429,'제로보 요청은 분당 10회까지 가능합니다.');
   busy.add(user.UID_VAL);
   let managedAction;
   try{
