@@ -1,3 +1,4 @@
+// 태그 일치만으로 성공 처리하지 않는다. 현장 GPS와 사용자/일정/동작별 일회성 챌린지를 함께 확인한다.
 const v = require('./validation');
 async function policy(query, company) {
  const row=(await query('SELECT NFC_REQUIRED FROM COMPANY_NFC_POLICY WHERE COMPANY_CODE=:company',{company})).rows[0];

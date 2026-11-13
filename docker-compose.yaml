@@ -1,39 +1,49 @@
-version: '3.8'
-
 services:
   # 데이터베이스 서비스 (Oracle Database 21c XE)
   db:
     image: gvenzl/oracle-xe:18-slim
     container_name: trip-oracle
-    privileged: true
     restart: always
     shm_size: 2g
     environment:
-      ORACLE_PASSWORD: ${ORACLE_PASSWORD:-oracle123!}
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:?Set ORACLE_PASSWORD privately}
       APP_USER: ${APP_USER:-TRIP_USER}
-      APP_USER_PASSWORD: ${APP_USER_PASSWORD:-trippassword123!}
+      APP_USER_PASSWORD: ${APP_USER_PASSWORD:?Set APP_USER_PASSWORD privately}
     ports:
-      - "1521:1521"
+      - "127.0.0.1:1521:1521"
     volumes:
       - oracle_data:/opt/oracle/oradata
       - ./oracle-init:/container-entrypoint-initdb.d
 
   # API 백엔드 서버 (Express + Oracle DB Node Driver)
   api:
-    image: node:20-alpine
+    build: ./backend
+    image: 01bo-server:local
     container_name: trip-api
     restart: always
     working_dir: /app
     environment:
       DB_USER: ${DB_USER:-TRIP_USER}
-      DB_PASSWORD: ${DB_PASSWORD:-trippassword123!}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD privately}
       DB_CONNECT_STRING: ${DB_CONNECT_STRING:-db:1521/XEPDB1}
       PORT: ${PORT:-3000}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+      TRUSTED_PROXY_CIDRS: ${TRUSTED_PROXY_CIDRS:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
+      O1BO_AGENT_MODE: ${O1BO_AGENT_MODE:-}
+      O1BO_GOOGLE_CLIENT_ID: ${O1BO_GOOGLE_CLIENT_ID:-}
+      O1BO_GOOGLE_CLIENT_SECRET: ${O1BO_GOOGLE_CLIENT_SECRET:-}
+      O1BO_GOOGLE_REDIRECT_URI: ${O1BO_GOOGLE_REDIRECT_URI:-}
+      O1BO_TOKEN_KEY: ${O1BO_TOKEN_KEY:-}
+      O1BO_GEOCODER_URL: ${O1BO_GEOCODER_URL:-}
+      O1BO_GEOCODER_USER_AGENT: ${O1BO_GEOCODER_USER_AGENT:-}
     ports:
       - "80:3000"
-    command: sh -c "npm install && node server.js"
-    volumes:
-      - ./backend:/app
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     depends_on:
       - db
 

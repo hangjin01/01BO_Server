@@ -1,3 +1,4 @@
+// 외부 발송 전 상태를 확정한다. 결과 불명 상태의 자동 재시도는 실제 이메일 중복 발송 위험이 있다.
 const crypto=require('node:crypto');
 const db=require('../db'),v=require('./validation');
 const {createReportDocx}=require('./report-docx');

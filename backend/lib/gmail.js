@@ -1,3 +1,4 @@
+// Google 토큰은 서버 내부에서만 복호화한다. 연결 완료는 앱 인증과 별개이며 발송 권한만 요청한다.
 const crypto=require('node:crypto'),db=require('../db'),v=require('./validation');
 const scope='https://www.googleapis.com/auth/gmail.send';
 const aad='O1BO Gmail connection v1';
@@ -27,7 +28,7 @@ function mountPublic(app){
   const url=new URL('https://accounts.google.com/o/oauth2/v2/auth');for(const [k,val]of Object.entries({client_id:process.env.O1BO_GOOGLE_CLIENT_ID,redirect_uri:cb.href,response_type:'code',scope:'openid email '+scope,access_type:'offline',prompt:'consent',state:ticket,code_challenge:crypto.createHash('sha256').update(decrypt(state.VERIFIER)).digest('base64url'),code_challenge_method:'S256'}))url.searchParams.set(k,val);res.redirect(url.href);
  });
  app.get('/api/gmail/callback',async(req,res)=>{
-  res.clearCookie('o1bo_gmail_state',{path:'/api/gmail/callback'});res.set('Referrer-Policy','no-referrer');res.set('Content-Security-Policy',"default-src 'none'; style-src 'unsafe-inline'");
+  res.clearCookie('o1bo_gmail_state',{path:'/api/gmail/callback'});res.set('Referrer-Policy','no-referrer');res.set('Content-Security-Policy',"default-src 'none'; style-src 'unsafe-inline'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'");
   try{
    const state=v.text(req.query.state,64,'state');const cookie=(req.headers.cookie||'').split(';').map(x=>x.trim()).find(x=>x.startsWith('o1bo_gmail_state='))?.slice('o1bo_gmail_state='.length);
    if(!/^[a-f0-9]{64}$/.test(state)||cookie!==state)v.fail(400,'연결 요청을 확인할 수 없습니다.');

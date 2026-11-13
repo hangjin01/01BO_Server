@@ -1,3 +1,4 @@
+// 클라이언트 회사 코드/역할은 신뢰하지 않는다. 조회 범위와 수정 소유권을 서버에서 각각 검사한다.
 const express=require('express');const crypto=require('node:crypto');
 const {executeQuery:q,transaction}=require('../db');const v=require('../lib/validation');
 const router=express.Router();

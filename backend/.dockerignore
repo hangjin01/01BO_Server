@@ -1,2 +1,13 @@
 node_modules
-npm-debug.log
+.git
+.env
+.env.*
+!.env.example
+.private
+.backups
+.releases
+*.pem
+*.key
+*.log
+*.before-*
+client_secret*.json

@@ -1,3 +1,4 @@
+// 연결 준비 상태만 재시도한다. 업무 쓰기/트랜잭션 재실행은 중복 기록을 만들 수 있다.
 const oracledb = require('oracledb');
 oracledb.outFormat = oracledb.OUT_FORMAT_OBJECT;
 oracledb.fetchAsString = [oracledb.CLOB];

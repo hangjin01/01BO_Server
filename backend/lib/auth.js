@@ -1,3 +1,4 @@
+// 권한의 근거는 요청 body가 아니라 유효한 세션과 현재 DB 소속이다. 토큰 원문은 DB에 저장하지 않는다.
 const crypto = require('node:crypto');
 const { executeQuery, transaction } = require('../db');
 const { fail, hash } = require('./validation');
